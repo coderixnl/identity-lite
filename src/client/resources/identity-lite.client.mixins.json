@@ -1,0 +1,15 @@
+{
+	"required": true,
+	"package": "nl.coderix.client.mixin",
+	"compatibilityLevel": "JAVA_25",
+	"client": [
+		"EntityRenderDispatcherMixin",
+		"InventoryScreenMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}
