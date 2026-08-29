@@ -6,7 +6,13 @@ import net.minecraft.world.entity.LivingEntity;
 public interface IMorphedPlayer {
     EntityType<?> getMorph();
 
-    void setMorph(EntityType<?> type);
+    default void setMorph(EntityType<?> type) {
+        setMorph(type, false);
+    }
+
+    void setMorph(EntityType<?> type, boolean baby);
+
+    boolean isBabyMorph();
 
     LivingEntity getMorphEntity();
 }

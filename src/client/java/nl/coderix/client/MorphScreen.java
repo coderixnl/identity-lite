@@ -7,6 +7,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
 import nl.coderix.network.MorphRequestPayload;
 import org.jspecify.annotations.NonNull;
 
@@ -14,8 +15,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MorphScreen extends Screen {
-    private final List<EntityType<?>> availableMorphs = new ArrayList<>();
-    private final List<LivingEntity> displayEntities = new ArrayList<>();
+    private final List<MorphOption> availableMorphs = new ArrayList<>();
     private int scrollOffset = 0;
     private static final int ICONS_PER_ROW = 6;
     private static final int ICON_SIZE = 40;
@@ -34,8 +34,16 @@ public class MorphScreen extends Screen {
                     net.minecraft.world.entity.Entity entity = type.create(minecraft.level, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
                     if (entity instanceof LivingEntity living) {
                         living.setId(1000000 + availableMorphs.size());
-                        availableMorphs.add(type);
-                        displayEntities.add(living);
+                        availableMorphs.add(new MorphOption(type, living, false));
+
+                        net.minecraft.world.entity.Entity babyEntity = type.create(minecraft.level, net.minecraft.world.entity.EntitySpawnReason.COMMAND);
+                        if (babyEntity instanceof Mob babyMob) {
+                            babyMob.setBaby(true);
+                            if (babyMob.isBaby()) {
+                                babyMob.setId(1000000 + availableMorphs.size());
+                                availableMorphs.add(new MorphOption(type, babyMob, true));
+                            }
+                        }
                     }
                 } catch (Exception e) {
                     // Ignore
@@ -45,7 +53,7 @@ public class MorphScreen extends Screen {
 
         int startX = width / 2 - 100;
         this.addRenderableWidget(Button.builder(Component.literal("Превратиться обратно в игрока"), button -> {
-            ClientPlayNetworking.send(new MorphRequestPayload(""));
+            ClientPlayNetworking.send(new MorphRequestPayload("", false));
             this.minecraft.setScreenAndShow(null);
         }).bounds(startX, 10, 200, 20).build());
     }
@@ -73,13 +81,18 @@ public class MorphScreen extends Screen {
             // Draw box
             context.fill(x, y, x + ICON_SIZE, y + ICON_SIZE, 0x80000000);
 
-            LivingEntity entity = displayEntities.get(i);
+            MorphOption option = availableMorphs.get(i);
+            LivingEntity entity = option.displayEntity();
             try {
                 net.minecraft.client.gui.screens.inventory.InventoryScreen.extractEntityInInventoryFollowsMouse(
                         context, x, y, x + ICON_SIZE, y + ICON_SIZE, 15, 0.05f, (float)mouseX, (float)mouseY, entity
                 );
             } catch (Exception e) {
-                context.centeredText(this.font, Component.literal(BuiltInRegistries.ENTITY_TYPE.getKey(availableMorphs.get(i)).getPath()), x + ICON_SIZE / 2, y + ICON_SIZE / 2 - 4, 0xFFFFFF);
+                context.centeredText(this.font, Component.literal(BuiltInRegistries.ENTITY_TYPE.getKey(option.type()).getPath()), x + ICON_SIZE / 2, y + ICON_SIZE / 2 - 4, 0xFFFFFF);
+            }
+
+            if (option.baby()) {
+                context.text(this.font, Component.literal("Д"), x + 2, y + 2, 0xFFFF55, true);
             }
 
             if (mouseX >= x && mouseX <= x + ICON_SIZE && mouseY >= y && mouseY <= y + ICON_SIZE) {
@@ -111,8 +124,9 @@ public class MorphScreen extends Screen {
             int y = startY + row * (ICON_SIZE + PADDING);
 
             if (mouseX >= x && mouseX <= x + ICON_SIZE && mouseY >= y && mouseY <= y + ICON_SIZE) {
-                String id = BuiltInRegistries.ENTITY_TYPE.getKey(availableMorphs.get(i)).toString();
-                ClientPlayNetworking.send(new MorphRequestPayload(id));
+                MorphOption option = availableMorphs.get(i);
+                String id = BuiltInRegistries.ENTITY_TYPE.getKey(option.type()).toString();
+                ClientPlayNetworking.send(new MorphRequestPayload(id, option.baby()));
                 this.minecraft.setScreenAndShow(null);
                 return true;
             }
@@ -133,5 +147,8 @@ public class MorphScreen extends Screen {
     @Override
     public boolean isPauseScreen() {
         return false;
+    }
+
+    private record MorphOption(EntityType<?> type, LivingEntity displayEntity, boolean baby) {
     }
 }

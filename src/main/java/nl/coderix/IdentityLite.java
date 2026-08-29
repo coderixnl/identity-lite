@@ -40,7 +40,7 @@ public class IdentityLite implements ModInitializer {
 				if (player instanceof IMorphedPlayer morphedPlayer) {
 					if (payload.morphTypeId() == null || payload.morphTypeId().isEmpty()) {
 						morphedPlayer.setMorph(null);
-						MorphSyncPayload syncPayload = new MorphSyncPayload(player.getUUID(), "");
+						MorphSyncPayload syncPayload = new MorphSyncPayload(player.getUUID(), "", false);
 						ServerPlayNetworking.send((net.minecraft.server.level.ServerPlayer) player, syncPayload);
 						for (net.minecraft.server.level.ServerPlayer tracker : net.fabricmc.fabric.api.networking.v1.PlayerLookup.tracking(player)) {
 							ServerPlayNetworking.send(tracker, syncPayload);
@@ -53,10 +53,10 @@ public class IdentityLite implements ModInitializer {
 								LOGGER.warn("Unknown morph type id from client: {}", payload.morphTypeId());
 								return;
 							}
-							morphedPlayer.setMorph(type);
+							morphedPlayer.setMorph(type, payload.baby());
 
 							// Sync to clients
-							MorphSyncPayload syncPayload = new MorphSyncPayload(player.getUUID(), payload.morphTypeId());
+							MorphSyncPayload syncPayload = new MorphSyncPayload(player.getUUID(), payload.morphTypeId(), morphedPlayer.isBabyMorph());
 							ServerPlayNetworking.send((net.minecraft.server.level.ServerPlayer) player, syncPayload);
 							for (net.minecraft.server.level.ServerPlayer tracker : net.fabricmc.fabric.api.networking.v1.PlayerLookup.tracking(player)) {
 								ServerPlayNetworking.send(tracker, syncPayload);
@@ -75,7 +75,7 @@ public class IdentityLite implements ModInitializer {
 				EntityType<?> morphType = morphed.getMorph();
 				if (morphType != null) {
 					String morphId = BuiltInRegistries.ENTITY_TYPE.getKey(morphType).toString();
-					ServerPlayNetworking.send(player, new MorphSyncPayload(targetPlayer.getUUID(), morphId));
+					ServerPlayNetworking.send(player, new MorphSyncPayload(targetPlayer.getUUID(), morphId, morphed.isBabyMorph()));
 				}
 			}
 		});

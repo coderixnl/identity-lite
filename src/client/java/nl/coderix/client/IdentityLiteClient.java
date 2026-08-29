@@ -25,7 +25,7 @@ public class IdentityLiteClient implements ClientModInitializer {
 						try {
 							Identifier id = Identifier.parse(payload.morphTypeId());
                             EntityType<?> type = BuiltInRegistries.ENTITY_TYPE.getValue(id);
-                            morphedPlayer.setMorph(type);
+                            morphedPlayer.setMorph(type, payload.baby());
                         } catch (Exception ignored) {
 							// Ignore parse errors
 						}
